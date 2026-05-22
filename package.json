@@ -18,6 +18,11 @@
   "publishConfig": {
     "access": "public"
   },
+  "scripts": {
+    "release:patch": "npm version patch && npm publish --access public && git push origin main",
+    "release:minor": "npm version minor && npm publish --access public && git push origin main",
+    "release:major": "npm version major && npm publish --access public && git push origin main"
+  },
   "peerDependencies": {
     "vitepress": "^1.6.4",
     "vue": "^3.5.33"

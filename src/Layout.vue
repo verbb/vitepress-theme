@@ -10,6 +10,7 @@ import { openDocsSearch } from './search';
 import { hasActiveSidebarItem, isActivePath, type SidebarGroup, type SidebarItem, useCloseSidebarOnEscape, useDocsSidebar } from './sidebar';
 
 type DocsThemeOptions = {
+    homeLink?: string;
     primary?: string;
     primaryStrong?: string;
     primarySoft?: string;
@@ -77,6 +78,11 @@ const siteTitle = computed(() => {
     }
 
     return site.value.title;
+});
+const homeHref = computed(() => {
+    const configuredHomeLink = (theme.value as typeof theme.value & { docsTheme?: DocsThemeOptions; }).docsTheme?.homeLink;
+
+    return configuredHomeLink || site.value.base || '/';
 });
 const socialLinks = computed(() => theme.value.socialLinks ?? []);
 const currentSidebarGroup = computed<SidebarGroup | null>(() => {
@@ -181,12 +187,18 @@ function flattenNavItems(items: DocsNavItem[]): DocsNavLink[] {
 
 function normalizeRoutePath(path: string) {
     const sanitizedPath = decodeURI(path).split(/[?#]/, 1)[0] || '/';
+    const base = site.value.base && site.value.base !== '/'
+        ? site.value.base.replace(/\/+$/, '')
+        : '';
+    const baseRelativePath = base && sanitizedPath.startsWith(`${base}/`)
+        ? sanitizedPath.slice(base.length)
+        : sanitizedPath;
 
-    if (sanitizedPath === '/') {
+    if (baseRelativePath === '/') {
         return '/';
     }
 
-    const withoutIndex = sanitizedPath.replace(/\/index(?:\.html)?$/, '/');
+    const withoutIndex = baseRelativePath.replace(/\/index(?:\.html)?$/, '/');
     const withoutExtension = withoutIndex.replace(/\.html$/, '');
 
     return withoutExtension === '/'
@@ -697,7 +709,7 @@ onBeforeUnmount(() => {
                             >
                                 <div class="lg:hidden">
                                     <div class="flex h-14 items-center justify-between gap-3">
-                                        <a href="/" class="flex min-w-0 items-center gap-3 select-none">
+                                        <a :href="homeHref" class="flex min-w-0 items-center gap-3 select-none">
                                             <img v-if="logoSrc" :src="logoSrc" alt="" class="relative block h-6 w-auto max-w-[156px] shrink-0 object-contain" />
                                             <div v-if="!logoSrc" class="min-w-0 truncate text-[15px] font-semibold tracking-[-0.01em] text-slate-900">
                                                 {{ siteTitle }}
@@ -818,7 +830,7 @@ onBeforeUnmount(() => {
 
                                 <div class="relative hidden h-14 min-w-0 flex-1 items-center gap-x-4 lg:flex lg:border-none">
                                     <div class="flex min-w-0 flex-1 items-center gap-x-4">
-                                        <a href="/" class="flex min-w-0 items-center gap-3 select-none">
+                                        <a :href="homeHref" class="flex min-w-0 items-center gap-3 select-none">
                                             <img v-if="logoSrc" :src="logoSrc" alt="" class="relative block h-6 w-auto max-w-[156px] shrink-0 object-contain" />
                                             <div v-if="!logoSrc" class="min-w-0 truncate text-[15px] font-semibold tracking-[-0.01em] text-slate-900">
                                                 {{ siteTitle }}
