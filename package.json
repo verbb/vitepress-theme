@@ -1,6 +1,6 @@
 {
   "name": "@verbb/vitepress-theme",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared VitePress theme (layout, sidebar, local search) for Verbb documentation sites.",
   "type": "module",
   "sideEffects": [
@@ -32,6 +32,6 @@
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
     "vitepress": "^1.6.4",
-        "vue": "^3.5.33"
+    "vue": "^3.5.33"
   }
 }
