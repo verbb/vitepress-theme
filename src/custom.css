@@ -100,6 +100,21 @@
     z-index: 1;
 }
 
+/*
+ * The heading anchor hangs into the left gutter, but the scroll container clips
+ * both axes (overflow-y: auto forces overflow-x to auto — it can't be
+ * `visible`), so below lg — where the card padding is only px-3 — the anchor
+ * gets cut off and there's no clean way to reveal it without stealing content
+ * width. It's a hover affordance anyway (touch devices never show it), so just
+ * hide it below lg; the copy-on-tap heading behaviour still works. On lg+ the
+ * card's px-10 padding gives it room, so it stays.
+ */
+@media (max-width: 1023.98px) {
+    .vp-doc :where(h2, h3, h4, h5, h6).docs-copyable-heading>.anchor-heading__icon-wrap {
+        display: none;
+    }
+}
+
 .vp-doc :where(h2, h3, h4, h5, h6).docs-copyable-heading>.anchor-heading__icon-wrap>.header-anchor {
     display: inline-flex;
     align-items: center;

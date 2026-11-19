@@ -700,8 +700,21 @@ onBeforeUnmount(() => {
         <DocsSearchProvider v-if="hasSearch" />
         <div class="max-lg:contents lg:flex lg:w-full" data-docs-theme="almond" :style="docsThemeStyle">
             <div class="max-lg:contents lg:flex-1 lg:min-w-0 lg:overflow-x-clip">
-                <header id="navbar" class="peer fixed top-0 z-30 w-full">
-                    <div class="relative z-10 mx-auto max-w-[96rem] px-4">
+                <!--
+                  When the mobile drawer is open, disable hits on the whole navbar.
+                  Inner fade already uses pointer-events-none, but the header chrome
+                  wrappers still sit at z-30 above the close control and steal clicks.
+                -->
+                <header
+                    id="navbar"
+                    class="peer fixed top-0 z-30 w-full"
+                    :class="isOpen ? 'max-lg:pointer-events-none' : ''"
+                >
+                    <!--
+                      Mobile inset matches the content card's border edge (grid px-2 = 8px),
+                      not the prose column — logo / switcher / icons line up with the box.
+                    -->
+                    <div class="relative z-10 mx-auto max-w-[96rem] px-4 max-lg:px-3">
                         <div class="relative">
                             <div
                                 class="transition-opacity duration-200"
@@ -709,14 +722,67 @@ onBeforeUnmount(() => {
                             >
                                 <div class="lg:hidden">
                                     <div class="flex h-14 items-center justify-between gap-3">
-                                        <a :href="homeHref" class="flex min-w-0 items-center gap-3 select-none">
-                                            <img v-if="logoSrc" :src="logoSrc" alt="" class="relative block h-6 w-auto max-w-[156px] shrink-0 object-contain" />
-                                            <div v-if="!logoSrc" class="min-w-0 truncate text-[15px] font-semibold tracking-[-0.01em] text-slate-900">
-                                                {{ siteTitle }}
-                                            </div>
-                                        </a>
+                                        <div class="flex min-w-0 flex-1 items-center gap-2.5">
+                                            <a :href="homeHref" class="flex min-w-0 shrink items-center gap-3 select-none">
+                                                <img v-if="logoSrc" :src="logoSrc" alt="" class="relative block h-6 w-auto max-w-[156px] shrink-0 object-contain" />
+                                                <div v-if="!logoSrc" class="min-w-0 truncate text-[15px] font-semibold tracking-[-0.01em] text-slate-900">
+                                                    {{ siteTitle }}
+                                                </div>
+                                            </a>
 
-                                        <div class="flex items-center gap-1.5">
+                                            <!--
+                                              Keep the section switcher on the logo row on mobile —
+                                              a second sticky row costs too much viewport height.
+                                            -->
+                                            <div
+                                                v-if="topNavLinks.length"
+                                                ref="topNavRootMobile"
+                                                class="relative min-w-0 shrink"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    class="inline-flex max-w-full items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/80 py-1.5 pl-2.5 pr-2 text-sm font-medium text-slate-800"
+                                                    :aria-expanded="topNavMenuMobileOpen"
+                                                    aria-haspopup="listbox"
+                                                    aria-label="Documentation section"
+                                                    @click.stop="toggleTopNavMenuMobile"
+                                                >
+                                                    <span class="min-w-0 truncate">{{ activeTopNavLabel }}</span>
+                                                    <svg
+                                                        class="h-4 w-4 shrink-0 text-slate-500 transition-transform"
+                                                        :class="topNavMenuMobileOpen ? 'rotate-180' : ''"
+                                                        viewBox="0 0 20 20"
+                                                        fill="none"
+                                                        aria-hidden="true"
+                                                    >
+                                                        <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                </button>
+                                                <div
+                                                    v-if="topNavMenuMobileOpen"
+                                                    class="absolute left-0 top-full z-[100] mt-1 min-w-[12rem] max-w-[min(100vw-2rem,22rem)] rounded-xl border border-slate-200/80 bg-white py-1 shadow-lg"
+                                                    role="listbox"
+                                                    :aria-label="`${activeTopNavLabel} options`"
+                                                >
+                                                    <a
+                                                        v-for="item in topNavLinks"
+                                                        :key="item.link"
+                                                        :href="withBase(item.link)"
+                                                        role="option"
+                                                        class="block truncate px-3 py-2 text-sm transition"
+                                                        :class="isTopNavLinkActive(item)
+                                                            ? 'bg-docs-primary-soft font-medium text-docs-primary-strong'
+                                                            : 'text-slate-700 hover:bg-slate-50'"
+                                                        :aria-selected="isTopNavLinkActive(item)"
+                                                        @click="closeTopNavMenus"
+                                                    >
+                                                        {{ item.text }}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="-mr-2 flex shrink-0 items-center gap-1.5">
                                             <button
                                                 v-if="hasSearch"
                                                 type="button"
@@ -752,53 +818,10 @@ onBeforeUnmount(() => {
                                         </div>
                                     </div>
 
-                                    <div
-                                        v-if="topNavLinks.length"
-                                        ref="topNavRootMobile"
-                                        class="relative border-t border-slate-100 px-1 py-2 lg:hidden"
-                                    >
-                                        <button
-                                            type="button"
-                                            class="flex w-full items-center justify-between gap-2 rounded-lg border border-slate-200/80 bg-white/80 px-3 py-2 text-left text-sm font-medium text-slate-800"
-                                            :aria-expanded="topNavMenuMobileOpen"
-                                            aria-haspopup="listbox"
-                                            aria-label="Documentation section"
-                                            @click.stop="toggleTopNavMenuMobile"
-                                        >
-                                            <span class="min-w-0 truncate">{{ activeTopNavLabel }}</span>
-                                            <svg
-                                                class="h-4 w-4 shrink-0 text-slate-500 transition-transform"
-                                                :class="topNavMenuMobileOpen ? 'rotate-180' : ''"
-                                                viewBox="0 0 20 20"
-                                                fill="none"
-                                                aria-hidden="true"
-                                            >
-                                                <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                        </button>
-                                        <div
-                                            v-if="topNavMenuMobileOpen"
-                                            class="absolute left-1 right-1 top-full z-[100] mt-1 max-h-[min(60vh,24rem)] overflow-y-auto rounded-xl border border-slate-200/80 bg-white py-1 shadow-lg"
-                                            role="listbox"
-                                            :aria-label="`${activeTopNavLabel} options`"
-                                        >
-                                            <a
-                                                v-for="item in topNavLinks"
-                                                :key="item.link"
-                                                :href="withBase(item.link)"
-                                                role="option"
-                                                class="block truncate px-3 py-2 text-sm transition"
-                                                :class="isTopNavLinkActive(item)
-                                                    ? 'bg-docs-primary-soft font-medium text-docs-primary-strong'
-                                                    : 'text-slate-700 hover:bg-slate-50'"
-                                                :aria-selected="isTopNavLinkActive(item)"
-                                                @click="closeTopNavMenus"
-                                            >
-                                                {{ item.text }}
-                                            </a>
-                                        </div>
-                                    </div>
-
+                                    <!--
+                                      Second row: page menu + breadcrumb. Lives in the fixed
+                                      header (not the scrolling card) so it stays put on scroll.
+                                    -->
                                     <button
                                         v-if="hasSidebar"
                                         type="button"
@@ -885,7 +908,7 @@ onBeforeUnmount(() => {
                                         </div>
                                     </div>
 
-                                    <div class="flex items-center gap-4">
+                                    <div class="-mr-2 flex items-center gap-4">
                                         <div class="flex items-center gap-2">
                                             <a
                                                 v-for="link in socialLinks"
@@ -914,41 +937,53 @@ onBeforeUnmount(() => {
                     </div>
                 </header>
 
+                <!--
+                  Mobile sticky chrome is two h-14 rows (logo/switcher/icons + page menu),
+                  so the content shell drops 7rem; desktop keeps its single 3.5rem bar.
+                -->
                 <div class="scroll-mt-[var(--scroll-mt)] fixed top-[7rem] w-full pb-2 pt-0 lg:top-[3.5rem]">
+                    <!--
+                      Own stacking context above the navbar (z-30). Child z-index alone
+                      was trapped under the header because this content shell is z-auto.
+                    -->
                     <div
                         v-if="hasSidebar"
-                        class="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-md transition-opacity duration-300 lg:hidden"
-                        :class="isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'"
-                        @click="close"
-                    />
-
-                    <button
-                        v-if="hasSidebar"
-                        type="button"
-                        class="fixed right-4 top-5 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/95 text-slate-500 shadow-[0_8px_24px_rgba(15,23,42,0.16)] backdrop-blur transition duration-300 lg:hidden"
-                        :class="isOpen ? 'pointer-events-auto opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95'"
-                        aria-label="Close navigation menu"
-                        @click="close"
+                        class="fixed inset-0 z-40 lg:hidden"
+                        :class="isOpen ? '' : 'pointer-events-none'"
+                        :aria-hidden="isOpen ? undefined : 'true'"
                     >
-                        <svg viewBox="0 0 20 20" fill="none" class="h-5 w-5" aria-hidden="true">
-                            <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
-                        </svg>
-                    </button>
-
-                    <aside
-                        v-if="hasSidebar"
-                        class="fixed inset-y-0 left-0 z-50 w-[min(22rem,calc(100vw-2.5rem))] max-w-full overflow-y-auto overscroll-contain border-r border-slate-200/80 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.22)] transition-transform duration-300 lg:hidden"
-                        :class="isOpen ? 'translate-x-0' : '-translate-x-[105%]'"
-                    >
-                        <DocsMobileMenu
-                            :logo-src="logoSrc"
-                            :site-title="siteTitle"
-                            @navigate="close"
+                        <div
+                            class="absolute inset-0 bg-slate-950/40 backdrop-blur-md transition-opacity duration-300"
+                            :class="isOpen ? 'opacity-100' : 'opacity-0'"
+                            @click="close"
                         />
-                    </aside>
+
+                        <button
+                            type="button"
+                            class="absolute right-4 top-5 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/95 text-slate-500 shadow-[0_8px_24px_rgba(15,23,42,0.16)] transition duration-300"
+                            :class="isOpen ? 'opacity-100 scale-100' : 'pointer-events-none opacity-0 scale-95'"
+                            aria-label="Close navigation menu"
+                            @click="close"
+                        >
+                            <svg viewBox="0 0 20 20" fill="none" class="h-5 w-5" aria-hidden="true">
+                                <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" />
+                            </svg>
+                        </button>
+
+                        <aside
+                            class="absolute inset-y-0 left-0 w-[min(22rem,calc(100vw-2.5rem))] max-w-full overflow-y-auto overscroll-contain border-r border-slate-200/80 bg-white shadow-[0_28px_90px_rgba(15,23,42,0.22)] transition-transform duration-300"
+                            :class="isOpen ? 'translate-x-0' : 'pointer-events-none -translate-x-[105%]'"
+                        >
+                            <DocsMobileMenu
+                                :logo-src="logoSrc"
+                                :site-title="siteTitle"
+                                @navigate="close"
+                            />
+                        </aside>
+                    </div>
 
                     <div
-                        class="mx-auto grid h-[calc(100dvh-8rem)] min-h-0 w-full max-w-[96rem] rounded-2xl px-2 lg:h-[calc(100dvh-4rem)] lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:gap-x-2 lg:px-4"
+                        class="mx-auto grid h-[calc(100dvh-7rem)] min-h-0 w-full max-w-[96rem] rounded-2xl px-2 lg:h-[calc(100dvh-4rem)] lg:grid-cols-[16.5rem_minmax(0,1fr)] lg:gap-x-2 lg:px-4"
                         :class="hasSidebar ? '' : 'lg:grid-cols-[minmax(0,1fr)]'"
                     >
                         <div
@@ -991,7 +1026,7 @@ onBeforeUnmount(() => {
                             <div
                                 id="docs-scroll-container"
                                 ref="docsScrollContainer"
-                                class="stable-scrollbar-gutter h-full overflow-y-auto rounded-xl border border-gray-400/30 bg-white px-8 pt-8 pb-10 lg:px-10 lg:pt-10"
+                                class="stable-scrollbar-gutter h-full overflow-y-auto rounded-xl border border-gray-400/30 bg-white px-4 pb-10 pt-6 lg:px-10 lg:pt-10"
                             >
                                 <div
                                     class="mx-auto w-full max-w-[88rem] xl:grid xl:grid-cols-[minmax(0,52rem)_16.5rem] xl:justify-center xl:gap-x-12"
