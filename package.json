@@ -1,6 +1,6 @@
 {
   "name": "@verbb/vitepress-theme",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Shared VitePress theme (layout, sidebar, local search) for Verbb documentation sites.",
   "type": "module",
   "sideEffects": [
